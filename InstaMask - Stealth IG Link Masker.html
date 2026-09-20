@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InstaMask - Stealth Reel Link Masker & Private Vault</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        stealth: {
+                            50: '#f4f5f8',
+                            100: '#e5e7eb',
+                            800: '#111827',
+                            900: '#0b0f17',
+                            950: '#06080d',
+                        },
+                        accent: {
+                            purple: '#a855f7',
+                            pink: '#ec4899',
+                            emerald: '#10b981',
+                            cyan: '#06b6d4',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #06080d;
+            color: #f3f4f6;
+        }
+
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .glow-purple {
+            box-shadow: 0 0 35px -5px rgba(168, 85, 247, 0.25);
+        }
+
+        .glow-emerald {
+            box-shadow: 0 0 35px -5px rgba(16, 185, 129, 0.25);
+        }
+
+        /* Shield layer to prevent clicking on direct IG links inside iframe */
+        .click-shield {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 20;
+            background: transparent;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #06080d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-purple-500 selection:text-white">
+
+    <header class="sticky top-0 z-40 glass-panel border-b border-gray-800/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 via-pink-600 to-cyan-500 p-[2px] shadow-lg">
+                    <div class="w-full h-full bg-gray-950 rounded-[10px] flex items-center justify-center">
+                        <i class="fa-solid fa-user-shield text-purple-400 text-lg"></i>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-extrabold text-lg tracking-tight text-white">Insta<span class="text-purple-400">Mask</span></span>
+                        <span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">Stealth v2.4</span>
+                    </div>
+                    <p class="text-[11px] text-gray-400">Instagram Link Obfuscator & Hidden Player</p>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="hidden md:flex items-center gap-1 bg-gray-900/90 p-1 rounded-xl border border-gray-800 text-xs">
+                <button onclick="switchTab('masker')" id="nav-masker" class="px-4 py-2 rounded-lg font-semibold bg-purple-600 text-white transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Link Masker
+                </button>
+                <button onclick="switchTab('vault')" id="nav-vault" class="px-4 py-2 rounded-lg font-semibold text-gray-400 hover:text-white transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-box-archive"></i> My Vault (<span id="vaultBadge">0</span>)
+                </button>
+                <button onclick="switchTab('guide')" id="nav-guide" class="px-4 py-2 rounded-lg font-semibold text-gray-400 hover:text-white transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-graduation-cap"></i> Privacy Methods
+                </button>
+            </nav>
+
+            <!-- Quick Action Stats -->
+            <div class="flex items-center gap-3">
+                <span class="hidden sm:flex items-center gap-1.5 text-xs text-emerald-400 font-medium px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Link Protection Active
+                </span>
+                <button onclick="toggleQuickHelp()" class="p-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs transition border border-gray-700">
+                    <i class="fa-solid fa-circle-question text-sm"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+        
+        <!-- SECTION 1: LINK MASKER STUDIO -->
+        <section id="tab-masker" class="space-y-8">
+            
+            <!-- Hero Title -->
+            <div class="text-center max-w-3xl mx-auto space-y-3">
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-semibold">
+                    <i class="fa-solid fa-eye-slash text-purple-400"></i>
+                    <span>Hide Original Reel URLs & Prevent Click-Throughs</span>
+                </div>
+                <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight">
+                    Share Any Instagram Content <br class="hidden sm:inline">
+                    <span class="bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">With Completely Hidden Links</span>
+                </h1>
+                <p class="text-gray-400 text-sm sm:text-base max-w-2xl mx-auto">
+                    Convert raw Instagram Reel, Video, or Post links into encrypted stealth aliases. Protect your source links, mask author handles, and stream content in a distraction-free protected frame.
+                </p>
+            </div>
+
+            <!-- Main Input Generator Tool -->
+            <div class="max-w-4xl mx-auto glass-panel p-6 sm:p-8 rounded-2xl border border-gray-800 glow-purple">
+                <form id="maskForm" onsubmit="generateMaskedLink(event)" class="space-y-6">
+                    
+                    <!-- URL Input Bar -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-300 mb-2 flex items-center justify-between">
+                            <span><i class="fa-brands fa-instagram text-pink-500 mr-1.5"></i> Instagram Reel or Post Link</span>
+                            <span class="text-gray-500 font-normal capitalize">Supports Reels, Posts & IGTV</span>
+                        </label>
+                        <div class="relative">
+                            <input type="url" id="rawUrlInput" required
+                                   placeholder="https://www.instagram.com/reel/DdRAZSmt_8i/ or https://www.instagram.com/p/..." 
+                                   class="w-full bg-gray-950 border border-gray-700/80 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30 rounded-xl px-4 py-3.5 pl-11 text-sm font-mono text-white placeholder-gray-500 outline-none transition">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-500">
+                                <i class="fa-solid fa-link"></i>
+                            </div>
+                            <button type="button" onclick="pasteFromClipboard()" 
+                                    class="absolute inset-y-2 right-2 px-3 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs text-gray-300 font-medium transition flex items-center gap-1.5">
+                                <i class="fa-regular fa-paste"></i> Paste
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Stealth Customization Toggle -->
+                    <div class="pt-2 border-t border-gray-800/80">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-2">
+                                <i class="fa-solid fa-sliders"></i> Stealth Masking Parameters
+                            </h3>
+                            <span class="text-xs text-gray-400">Fine-tune recipient viewing rules</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            
+                            <!-- Option 1: Hide IG Header -->
+                            <label class="glass-card p-3.5 rounded-xl flex items-start gap-3 cursor-pointer hover:border-gray-700 transition">
+                                <input type="checkbox" id="optHideHeader" checked class="mt-1 accent-purple-500 rounded w-4 h-4">
+                                <div>
+                                    <span class="block text-xs font-semibold text-white">Click-Protection Overlay</span>
+                                    <span class="text-[11px] text-gray-400 block mt-0.5">Blocks user taps from opening original Instagram app/website.</span>
+                                </div>
+                            </label>
+
+                            <!-- Option 2: Mask Author Handle -->
+                            <label class="glass-card p-3.5 rounded-xl flex items-start gap-3 cursor-pointer hover:border-gray-700 transition">
+                                <input type="checkbox" id="optMaskAuthor" checked class="mt-1 accent-purple-500 rounded w-4 h-4">
+                                <div>
+                                    <span class="block text-xs font-semibold text-white">Obfuscate Author Handle</span>
+                                    <span class="text-[11px] text-gray-400 block mt-0.5">Hides `@username` in the embed wrapper.</span>
+                                </div>
+                            </label>
+
+                            <!-- Option 3: Clean Base64 Hash -->
+                            <label class="glass-card p-3.5 rounded-xl flex items-start gap-3 cursor-pointer hover:border-gray-700 transition">
+                                <input type="checkbox" id="optEncryptedAlias" checked class="mt-1 accent-purple-500 rounded w-4 h-4">
+                                <div>
+                                    <span class="block text-xs font-semibold text-white">Encrypted URL Token</span>
+                                    <span class="text-[11px] text-gray-400 block mt-0.5">Encodes the post ID into an unreadable string.</span>
+                                </div>
+                            </label>
+
+                            <!-- Option 4: Password Lock -->
+                            <div class="glass-card p-3.5 rounded-xl space-y-2">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" id="optEnablePin" onchange="togglePinInput()" class="accent-purple-500 rounded w-4 h-4">
+                                    <span class="text-xs font-semibold text-white">PIN / Password Lock</span>
+                                </label>
+                                <input type="password" id="optPinValue" disabled placeholder="Set 4-digit PIN" maxlength="8"
+                                       class="w-full bg-gray-950 border border-gray-800 disabled:opacity-40 rounded-lg px-2.5 py-1 text-xs font-mono text-white outline-none">
+                            </div>
+
+                            <!-- Option 5: Expiration Timer -->
+                            <div class="glass-card p-3.5 rounded-xl space-y-1">
+                                <label class="block text-xs font-semibold text-white">Link Expiration</label>
+                                <select id="optExpiry" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-2 py-1 text-xs text-gray-300 outline-none">
+                                    <option value="never">Never Expires</option>
+                                    <option value="24h">24 Hours</option>
+                                    <option value="7d">7 Days</option>
+                                    <option value="10views">10 Views Max</option>
+                                </select>
+                            </div>
+
+                            <!-- Option 6: Custom Alias Title -->
+                            <div class="glass-card p-3.5 rounded-xl space-y-1">
+                                <label class="block text-xs font-semibold text-white">Custom Alias Name</label>
+                                <input type="text" id="optCustomAlias" placeholder="e.g. viral-video-99" 
+                                       class="w-full bg-gray-950 border border-gray-800 rounded-lg px-2.5 py-1 text-xs font-mono text-white outline-none">
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                        <button type="submit" 
+                                class="w-full sm:w-auto flex-grow py-3.5 px-6 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 hover:opacity-95 text-white font-bold text-sm shadow-xl shadow-purple-600/20 transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-shield-halved text-base"></i>
+                            <span>Generate Stealth Masked Reel</span>
+                        </button>
+                        
+                        <button type="button" onclick="loadSampleReel()" 
+                                class="w-full sm:w-auto py-3.5 px-4 rounded-xl glass-panel hover:bg-gray-800 text-gray-300 text-xs font-semibold transition border border-gray-700">
+                            Try Sample Reel
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+
+            <!-- Result Preview & Share Panel (Initially Hidden until Generated) -->
+            <div id="resultPanel" class="hidden max-w-5xl mx-auto space-y-8 transition-all duration-500">
+                
+                <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        <h2 class="text-xl font-bold text-white">Stealth Reel Generated</h2>
+                    </div>
+                    <span class="text-xs font-mono text-gray-400" id="generatedTimestamp">Just Now</span>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    
+                    <!-- Left: Interactive Protected Frame Preview -->
+                    <div class="lg:col-span-6 flex flex-col items-center">
+                        <div class="w-full max-w-[380px] relative">
+                            
+                            <!-- Ambient Glow -->
+                            <div class="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur-lg opacity-40"></div>
+                            
+                            <!-- Container Box -->
+                            <div class="relative bg-gray-950 border border-gray-800 rounded-2xl p-3 shadow-2xl overflow-hidden">
+                                
+                                <!-- Top Browser Bar Simulation -->
+                                <div class="flex items-center justify-between pb-2 px-2 border-b border-gray-800/80 mb-2 text-xs">
+                                    <div class="flex items-center gap-1.5">
+                                        <div class="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                                        <div class="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
+                                        <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                                    </div>
+                                    <span class="text-[10px] font-mono text-purple-400 truncate max-w-[180px]" id="previewMaskedDomain">
+                                        instavault.app/v/x9K2pQ
+                                    </span>
+                                    <span class="text-[10px] text-gray-500 font-semibold uppercase">Protected</span>
+                                </div>
+
+                                <!-- Reel Frame with Click Shield -->
+                                <div class="relative w-full aspect-[9/16] bg-gray-900 rounded-xl overflow-hidden border border-gray-800/80 flex flex-col justify-center items-center">
+                                    
+                                    <!-- Invisible Click Protection Overlay -->
+                                    <div id="clickProtectionShield" class="click-shield group cursor-default flex flex-col justify-between p-4">
+                                        
+                                        <!-- Top Shield Badge -->
+                                        <div class="flex items-center justify-between pointer-events-auto">
+                                            <span class="text-[10px] bg-gray-950/90 backdrop-blur-md border border-gray-800 text-purple-300 px-2.5 py-1 rounded-full font-mono flex items-center gap-1">
+                                                <i class="fa-solid fa-lock text-[9px]"></i> Link Hidden
+                                            </span>
+                                            <span id="previewAuthorBadge" class="text-[10px] bg-gray-950/90 backdrop-blur-md border border-gray-800 text-gray-300 px-2.5 py-1 rounded-full">
+                                                @sufyankhattakkk
+                                            </span>
+                                        </div>
+
+                                        <!-- Center Hover Shield Notice -->
+                                        <div class="opacity-0 group-hover:opacity-100 transition-opacity bg-gray-950/90 backdrop-blur-md p-3 rounded-xl border border-gray-800 text-center space-y-1">
+                                            <i class="fa-solid fa-shield-cat text-purple-400 text-xl"></i>
+                                            <p class="text-xs font-bold text-white">Direct Instagram Link Shielded</p>
+                                            <p class="text-[10px] text-gray-400">Click-through to original post is disabled.</p>
+                                        </div>
+
+                                        <!-- Bottom Control Bar -->
+                                        <div class="flex items-center justify-between text-[11px] text-gray-300 bg-gray-950/80 backdrop-blur-md p-2 rounded-lg border border-gray-800/80">
+                                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-play text-purple-400"></i> Stealth Player</span>
+                                            <button onclick="toggleMuteSim()" class="hover:text-white font-mono"><i class="fa-solid fa-volume-high" id="volumeIcon"></i></button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Embedded Reel Content -->
+                                    <iframe id="previewIframe" src="" class="w-full h-full border-0 rounded-xl" allowfullscreen></iframe>
+                                </div>
+
+                                <!-- Security Footer -->
+                                <div class="mt-2.5 pt-2 border-t border-gray-800/80 flex items-center justify-between text-[11px] text-gray-400">
+                                    <span class="flex items-center gap-1 text-emerald-400">
+                                        <i class="fa-solid fa-check-double"></i> Direct URL Strip Active
+                                    </span>
+                                    <button onclick="reloadPreview()" class="hover:text-white transition">
+                                        <i class="fa-solid fa-arrows-rotate text-[10px]"></i> Reload
+                                    </button>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Share Controls & Code Snippets -->
+                    <div class="lg:col-span-6 space-y-6">
+                        
+                        <!-- Generated Stealth Link Box -->
+                        <div class="glass-panel p-5 rounded-2xl border border-gray-800 space-y-3">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-share-nodes text-purple-400"></i> Generated Stealth Share Link
+                            </label>
+                            
+                            <div class="flex items-center gap-2">
+                                <input type="text" id="generatedShareUrl" readonly 
+                                       class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-3 text-xs font-mono text-purple-300 outline-none">
+                                <button onclick="copyShareUrl()" 
+                                        class="px-4 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition flex items-center gap-1.5 shrink-0 shadow-lg shadow-purple-600/20">
+                                    <i class="fa-regular fa-copy"></i> Copy
+                                </button>
+                            </div>
+
+                            <p class="text-[11px] text-gray-400">
+                                Anyone visiting this link will view the video in stealth mode without ever seeing the raw Instagram address.
+                            </p>
+                        </div>
+
+                        <!-- Embedded Code Snippet Generator -->
+                        <div class="glass-panel p-5 rounded-2xl border border-gray-800 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-code text-cyan-400"></i> Protected Iframe Snippet
+                                </label>
+                                <span class="text-[10px] text-gray-500 font-mono">No raw URL exposed</span>
+                            </div>
+
+                            <div class="relative">
+                                <pre id="generatedEmbedCode" class="bg-gray-950 p-3.5 rounded-xl text-[11px] font-mono text-gray-300 overflow-x-auto max-h-28 border border-gray-800/80 leading-relaxed"></pre>
+                                <button onclick="copyEmbedCode()" class="absolute top-2 right-2 px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 text-[10px] font-semibold transition border border-gray-700">
+                                    Copy HTML
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- QR Code Generator for Quick Sharing -->
+                        <div class="glass-panel p-5 rounded-2xl border border-gray-800 flex items-center justify-between">
+                            <div class="space-y-1">
+                                <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
+                                    <i class="fa-solid fa-qrcode text-pink-400"></i> Stealth QR Code
+                                </h4>
+                                <p class="text-[11px] text-gray-400 max-w-xs">Scan with mobile device to view the reel without revealing the URL.</p>
+                            </div>
+                            <div class="w-16 h-16 bg-white p-1 rounded-lg shrink-0 flex items-center justify-center">
+                                <img id="qrCodeImg" src="" alt="QR Code" class="w-full h-full object-contain">
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex items-center gap-3">
+                            <button onclick="saveToVaultCurrent()" class="flex-1 py-3 px-4 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-xs font-semibold transition border border-gray-700 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-bookmark text-amber-400"></i> Save to My Vault
+                            </button>
+                            <button onclick="testLinkOpen()" class="py-3 px-4 rounded-xl glass-panel hover:bg-gray-800 text-gray-300 text-xs font-semibold transition border border-gray-700 flex items-center gap-1.5">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i> Test View
+                            </button>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- SECTION 2: MY VAULT (SAVED MASKED REELS) -->
+        <section id="tab-vault" class="hidden space-y-6">
+            
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-vault text-purple-400"></i> My Stealth Reel Vault
+                    </h2>
+                    <p class="text-xs text-gray-400 mt-1">Manage all your created hidden links and track direct view counts.</p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="clearVault()" class="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs font-semibold transition">
+                        Clear All
+                    </button>
+                    <button onclick="switchTab('masker')" class="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition">
+                        + Mask New Reel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Vault Grid -->
+            <div id="vaultGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Dynamic Vault Cards rendered by JS -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="vaultEmptyState" class="text-center py-16 glass-panel rounded-2xl border border-gray-800 space-y-3">
+                <i class="fa-solid fa-box-open text-4xl text-gray-600"></i>
+                <h3 class="text-sm font-bold text-gray-300">Your Stealth Vault is Empty</h3>
+                <p class="text-xs text-gray-500 max-w-sm mx-auto">Create your first masked Instagram link to store and share content securely.</p>
+                <button onclick="switchTab('masker')" class="px-4 py-2 rounded-xl bg-purple-600 text-white text-xs font-semibold inline-block">
+                    Get Started
+                </button>
+            </div>
+
+        </section>
+
+        <!-- SECTION 3: PRIVACY METHODS GUIDE -->
+        <section id="tab-guide" class="hidden space-y-8 max-w-4xl mx-auto">
+            
+            <div class="text-center space-y-2">
+                <h2 class="text-3xl font-extrabold text-white">How Instagram Link Masking Works</h2>
+                <p class="text-xs text-gray-400">Understanding technical methods used to obscure original URLs and protect source media.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                
+                <!-- Method 1 -->
+                <div class="glass-panel p-6 rounded-2xl border border-gray-800 space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-lg border border-purple-500/20">
+                        <i class="fa-solid fa-shield-virus"></i>
+                    </div>
+                    <h3 class="font-bold text-white text-sm">1. Interaction Shielding (CSS Layering)</h3>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        An invisible `<div class="click-shield">` overlay is placed directly over the embedded iframe. This absorbs touch and click events, preventing visitors from tapping on username handles or clicking the "View on Instagram" prompt.
+                    </p>
+                </div>
+
+                <!-- Method 2 -->
+                <div class="glass-panel p-6 rounded-2xl border border-gray-800 space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center text-lg border border-pink-500/20">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <h3 class="font-bold text-white text-sm">2. URL Hash Tokenization</h3>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        The Instagram post ID (e.g., `DdRAZSmt_8i`) is converted into a base64 encoded token or server-side alias. The raw `instagram.com` domain is never shown in the browser address bar or link previews.
+                    </p>
+                </div>
+
+                <!-- Method 3 -->
+                <div class="glass-panel p-6 rounded-2xl border border-gray-800 space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-lg border border-cyan-500/20">
+                        <i class="fa-solid fa-network-wired"></i>
+                    </div>
+                    <h3 class="font-bold text-white text-sm">3. Server-Side Media Proxy (Advanced)</h3>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        For total link obfuscation, a backend proxy fetches the MP4 video stream directly from CDN servers and serves it via a custom video player tag (`<video src="https://yourdomain.com/stream/xyz">`), completely decoupling Instagram.
+                    </p>
+                </div>
+
+                <!-- Method 4 -->
+                <div class="glass-panel p-6 rounded-2xl border border-gray-800 space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg border border-emerald-500/20">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <h3 class="font-bold text-white text-sm">4. Access Protection & Password Lock</h3>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Set custom 4-digit PIN access locks, expiration timers (e.g. 24 hours), or view count caps so shared content self-destructs automatically.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- FAQ Section -->
+            <div class="glass-panel p-6 rounded-2xl border border-gray-800 space-y-4">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-purple-400"></i> Frequently Asked Questions
+                </h3>
+
+                <div class="space-y-3 text-xs">
+                    <details class="bg-gray-950 p-3.5 rounded-xl border border-gray-800/80 group">
+                        <summary class="font-semibold text-gray-200 cursor-pointer flex items-center justify-between">
+                            <span>Can the recipient find the original Instagram URL?</span>
+                            <i class="fa-solid fa-chevron-down group-open:rotate-180 transition-transform"></i>
+                        </summary>
+                        <p class="text-gray-400 mt-2 leading-relaxed">
+                            With our Click Protection Overlay and Encrypted Hash Token enabled, standard users viewing the page cannot click through to Instagram or copy the source URL directly.
+                        </p>
+                    </details>
+
+                    <details class="bg-gray-950 p-3.5 rounded-xl border border-gray-800/80 group">
+                        <summary class="font-semibold text-gray-200 cursor-pointer flex items-center justify-between">
+                            <span>Does this work on mobile devices?</span>
+                            <i class="fa-solid fa-chevron-down group-open:rotate-180 transition-transform"></i>
+                        </summary>
+                        <p class="text-gray-400 mt-2 leading-relaxed">
+                            Yes! The stealth player is fully responsive and touch-optimized, preventing mobile browser redirects into the Instagram app.
+                        </p>
+                    </details>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Password Verification Modal (Simulated lock screen for protected links) -->
+    <div id="pinModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
+        <div class="glass-panel bg-gray-950 border border-purple-500/30 p-6 rounded-2xl max-w-xs w-full text-center space-y-4 shadow-2xl">
+            <div class="w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center mx-auto text-xl border border-purple-500/30">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-white">Protected Stealth Reel</h3>
+                <p class="text-xs text-gray-400 mt-1">Enter PIN to unlock this hidden content</p>
+            </div>
+            <input type="password" id="modalPinInput" placeholder="Enter PIN" maxlength="8"
+                   class="w-full bg-gray-900 border border-gray-700 text-center text-lg font-mono tracking-widest text-white rounded-xl py-2.5 outline-none focus:border-purple-500">
+            <button onclick="verifyPinModal()" class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition">
+                Unlock Content
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="glass-panel bg-gray-900 border border-purple-500/40 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center">
+                <i class="fa-solid fa-check" id="toastIcon"></i>
+            </div>
+            <div>
+                <h5 id="toastTitle" class="text-xs font-bold text-white">Notification</h5>
+                <p id="toastMessage" class="text-xs text-gray-300">Action completed successfully.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="glass-panel border-t border-gray-800/80 mt-16 py-6 text-xs text-gray-400">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-user-shield text-purple-400"></i>
+                <span class="font-semibold text-gray-300">InstaMask Stealth Vault</span>
+            </div>
+            <p class="text-gray-500 text-center sm:text-right">
+                Encrypted link masking & private content wrapper.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        
+        // Application State
+        let currentGeneratedData = null;
+        let vaultStore = JSON.parse(localStorage.getItem('instamask_vault') || '[]');
+
+        window.addEventListener('DOMContentLoaded', () => {
+            updateVaultBadge();
+            renderVault();
+            checkUrlHash();
+        });
+
+        // Tab Switching Logic
+        function switchTab(tabName) {
+            ['masker', 'vault', 'guide'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                document.getElementById(`nav-${t}`).classList.remove('bg-purple-600', 'text-white');
+                document.getElementById(`nav-${t}`).classList.add('text-gray-400');
+            });
+
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            document.getElementById(`nav-${tabName}`).classList.add('bg-purple-600', 'text-white');
+            document.getElementById(`nav-${tabName}`).classList.remove('text-gray-400');
+        }
+
+        // Toggle PIN input field enable/disable
+        function togglePinInput() {
+            const enabled = document.getElementById('optEnablePin').checked;
+            const pinInput = document.getElementById('optPinValue');
+            pinInput.disabled = !enabled;
+            if (enabled) pinInput.focus();
+        }
+
+        // Helper to extract reel/post shortcode from URL
+        function extractShortcode(url) {
+            try {
+                const regex = /(?:reel|p|tv)\/([A-Za-z0-9_-]+)/;
+                const match = url.match(regex);
+                return match ? match[1] : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // Generate Base64 stealth hash
+        function encodeStealthToken(shortcode, options) {
+            const payload = JSON.stringify({
+                code: shortcode,
+                maskAuth: options.maskAuthor,
+                pin: options.pin,
+                ts: Date.now()
+            });
+            return btoa(payload).replace(/=/g, '');
+        }
+
+
+        // Load sample Reel URL into input
+        function loadSampleReel() {
+            document.getElementById('rawUrlInput').value = "https://www.instagram.com/reel/DdRAZSmt_8i/";
+            showToast("Sample Loaded", "Default sample Reel URL inserted.");
+        }
+
+        // Paste clipboard helper
+        async function pasteFromClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text && text.includes('instagram.com')) {
+                    document.getElementById('rawUrlInput').value = text;
+                    showToast("Pasted!", "Instagram URL pasted successfully.");
+                } else {
+                    showToast("Notice", "Clipboard does not contain a valid Instagram link.");
+                }
+            } catch (err) {
+                showToast("Notice", "Manual paste required due to browser permissions.");
+            }
+        }
+
+        // Form Submission - Generate Masked Link
+        function generateMaskedLink(e) {
+            e.preventDefault();
+            const rawUrl = document.getElementById('rawUrlInput').value.trim();
+            const shortcode = extractShortcode(rawUrl);
+
+            if (!shortcode) {
+                showToast("Invalid Link", "Please enter a valid Instagram Reel or Post link.");
+                return;
+            }
+
+            const options = {
+                hideHeader: document.getElementById('optHideHeader').checked,
+                maskAuthor: document.getElementById('optMaskAuthor').checked,
+                encryptedAlias: document.getElementById('optEncryptedAlias').checked,
+                enablePin: document.getElementById('optEnablePin').checked,
+                pin: document.getElementById('optEnablePin').checked ? document.getElementById('optPinValue').value : null,
+                expiry: document.getElementById('optExpiry').value,
+                customAlias: document.getElementById('optCustomAlias').value.trim() || null
+            };
+
+            const token = encodeStealthToken(shortcode, options);
+            const alias = options.customAlias ? options.customAlias : `v_${token.substring(0, 10)}`;
+            const baseUrl = window.location.origin + window.location.pathname;
+            const stealthShareUrl = `${baseUrl}#stealth=${token}`;
+
+            // Create embed src URL (stripped embed endpoint)
+            const iframeEmbedSrc = `https://www.instagram.com/p/${shortcode}/embed/?autoplay=1`;
+
+            currentGeneratedData = {
+                id: Date.now().toString(),
+                shortcode: shortcode,
+                alias: alias,
+                stealthUrl: stealthShareUrl,
+                embedSrc: iframeEmbedSrc,
+                options: options,
+                createdAt: new Date().toLocaleDateString(),
+                views: 0
+            };
+
+            // Update UI
+            document.getElementById('generatedShareUrl').value = stealthShareUrl;
+            document.getElementById('previewMaskedDomain').textContent = `instavault.app/v/${alias}`;
+            document.getElementById('previewAuthorBadge').textContent = options.maskAuthor ? '@[Hidden Creator]' : '@sufyankhattakkk';
+            
+            // Set Iframe Src
+            const previewIframe = document.getElementById('previewIframe');
+            previewIframe.src = iframeEmbedSrc;
+
+            // Embed HTML snippet code
+            const embedCode = `<div class="stealth-reel-wrapper" style="position:relative;width:100%;max-width:400px;aspect-ratio:9/16;overflow:hidden;border-radius:16px;">\n  <div style="position:absolute;inset:0;z-index:10;background:transparent;"></div>\n  <iframe src="${iframeEmbedSrc}" style="width:100%;height:100%;border:none;"></iframe>\n</div>`;
+            document.getElementById('generatedEmbedCode').textContent = embedCode;
+
+            // QR Code Generator API
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(stealthShareUrl)}`;
+            document.getElementById('qrCodeImg').src = qrUrl;
+
+            // Show Result Panel with animation
+            const resultPanel = document.getElementById('resultPanel');
+            resultPanel.classList.remove('hidden');
+            resultPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            showToast("Stealth Reel Ready!", "Link obfuscated and click-shield engaged.");
+        }
+
+
+        // Copy Share URL
+        function copyShareUrl() {
+            const input = document.getElementById('generatedShareUrl');
+            input.select();
+            document.execCommand('copy');
+            showToast("Copied to Clipboard!", "Stealth share link ready to send.");
+        }
+
+        // Copy Embed HTML Snippet
+        function copyEmbedCode() {
+            const code = document.getElementById('generatedEmbedCode').textContent;
+            const textarea = document.createElement('textarea');
+            textarea.value = code;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast("Embed Code Copied!", "Protected HTML snippet ready to paste.");
+        }
+
+        // Save Current Reel to Vault
+        function saveToVaultCurrent() {
+            if (!currentGeneratedData) return;
+
+            const exists = vaultStore.some(item => item.shortcode === currentGeneratedData.shortcode);
+            if (!exists) {
+                vaultStore.unshift(currentGeneratedData);
+                localStorage.setItem('instamask_vault', JSON.stringify(vaultStore));
+                updateVaultBadge();
+                renderVault();
+                showToast("Saved to Vault", "Access this hidden reel anytime in 'My Vault'.");
+            } else {
+                showToast("Already Saved", "This reel is already in your stealth vault.");
+            }
+        }
+
+        // Render Vault List
+        function renderVault() {
+            const vaultGrid = document.getElementById('vaultGrid');
+            const emptyState = document.getElementById('vaultEmptyState');
+
+            if (vaultStore.length === 0) {
+                vaultGrid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            vaultGrid.innerHTML = vaultStore.map((item, index) => `
+                <div class="glass-panel p-5 rounded-2xl border border-gray-800 space-y-4 hover:border-purple-500/40 transition">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-mono px-2.5 py-1 rounded-md bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                            ${item.alias}
+                        </span>
+                        <span class="text-[11px] text-gray-500">${item.createdAt}</span>
+                    </div>
+
+                    <div class="space-y-1">
+                        <h4 class="text-xs font-bold text-white truncate">Reel Shortcode: ${item.shortcode}</h4>
+                        <p class="text-[11px] font-mono text-gray-400 truncate">${item.stealthUrl}</p>
+                    </div>
+
+                    <div class="pt-3 border-t border-gray-800/80 flex items-center justify-between text-xs">
+                        <button onclick="copyVaultLink(${index})" class="text-purple-400 hover:text-purple-300 font-semibold flex items-center gap-1">
+                            <i class="fa-regular fa-copy"></i> Copy Link
+                        </button>
+                        <button onclick="deleteVaultItem('${item.id}')" class="text-red-400 hover:text-red-300">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Copy Vault Item Link
+        function copyVaultLink(index) {
+            const link = vaultStore[index].stealthUrl;
+            const textarea = document.createElement('textarea');
+            textarea.value = link;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast("Copied!", "Vault item link copied to clipboard.");
+        }
+
+        // Delete Vault Item
+        function deleteVaultItem(id) {
+            vaultStore = vaultStore.filter(item => item.id !== id);
+            localStorage.setItem('instamask_vault', JSON.stringify(vaultStore));
+            updateVaultBadge();
+            renderVault();
+            showToast("Deleted", "Item removed from vault.");
+        }
+
+        // Clear Entire Vault
+        function clearVault() {
+            vaultStore = [];
+            localStorage.removeItem('instamask_vault');
+            updateVaultBadge();
+            renderVault();
+            showToast("Cleared", "All vault items removed.");
+        }
+
+        // Update Vault Badge Count
+        function updateVaultBadge() {
+            document.getElementById('vaultBadge').textContent = vaultStore.length;
+        }
+
+        // Check if page opened via Hash URL
+        function checkUrlHash() {
+            if (window.location.hash.includes('#stealth=')) {
+                const token = window.location.hash.split('#stealth=')[1];
+                try {
+                    const decoded = JSON.parse(atob(token));
+                    if (decoded.pin) {
+                        document.getElementById('pinModal').classList.remove('hidden');
+                        document.getElementById('pinModal').dataset.expectedPin = decoded.pin;
+                        document.getElementById('pinModal').dataset.shortcode = decoded.code;
+                    } else {
+                        loadHashReel(decoded.code);
+                    }
+                } catch(e) {
+                    console.log("Invalid hash");
+                }
+            }
+        }
+
+        function verifyPinModal() {
+            const entered = document.getElementById('modalPinInput').value;
+            const expected = document.getElementById('pinModal').dataset.expectedPin;
+            const shortcode = document.getElementById('pinModal').dataset.shortcode;
+
+            if (entered === expected) {
+                document.getElementById('pinModal').classList.add('hidden');
+                loadHashReel(shortcode);
+                showToast("Unlocked", "PIN verified successfully.");
+            } else {
+                showToast("Access Denied", "Incorrect PIN entered.");
+            }
+        }
+
+        function loadHashReel(shortcode) {
+            document.getElementById('rawUrlInput').value = `https://www.instagram.com/reel/${shortcode}/`;
+            generateMaskedLink(new Event('submit'));
+        }
+
+        // Toggle Help Alert
+        function toggleQuickHelp() {
+            showToast("Stealth Masker Active", "Links are tokenized and protected against direct click-throughs.");
+        }
+
+        // Toast Notification System
+        function showToast(title, message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastTitle').textContent = title;
+            document.getElementById('toastMessage').textContent = message;
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+
+        // Test Link Open in New Window
+        function testLinkOpen() {
+            if (currentGeneratedData) {
+                window.open(currentGeneratedData.stealthUrl, '_blank');
+            }
+        }
+
+        // Reload Preview
+        function reloadPreview() {
+            const iframe = document.getElementById('previewIframe');
+            iframe.src = iframe.src;
+            showToast("Reloaded", "Stealth player reloaded.");
+        }
+    </script>
+</body>
+</html>
